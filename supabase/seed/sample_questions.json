@@ -1,0 +1,156 @@
+{
+  "$schema": "./question_schema.json",
+  "version": "1.0.0",
+  "questions": [
+    {
+      "title": "JavaScript Closures",
+      "question_text": "Explain what closures are in JavaScript. How do they work, and provide a practical example where closures are useful?",
+      "category": "frontend",
+      "topic": "JavaScript Fundamentals",
+      "difficulty": "medium",
+      "ideal_answer": "A closure is a function that has access to variables from its outer (enclosing) function's scope, even after the outer function has returned. This happens because the inner function maintains a reference to the outer function's variable environment.\n\nHow it works:\n1. When a function is created, it captures a reference to its lexical environment\n2. This environment includes all local variables that were in-scope at the time the closure was created\n3. The closure 'closes over' these variables, keeping them alive even after the outer function completes\n\nPractical example - Data Privacy/Encapsulation:\n```javascript\nfunction createCounter() {\n  let count = 0; // private variable\n  return {\n    increment: function() { return ++count; },\n    decrement: function() { return --count; },\n    getCount: function() { return count; }\n  };\n}\n\nconst counter = createCounter();\ncounter.increment(); // 1\ncounter.increment(); // 2\ncounter.getCount(); // 2\n// count is not accessible directly\n```\n\nOther use cases include:\n- Partial application and currying\n- Event handlers that need access to outer variables\n- Module pattern for encapsulation\n- Memoization and caching",
+      "rubric": {
+        "concept_accuracy": {
+          "max_score": 4,
+          "weight_description": "Accurate explanation of closure definition, lexical scoping, and variable capture mechanism",
+          "scoring_guide": [
+            { "score": 0, "description": "No understanding of closures" },
+            { "score": 1, "description": "Vague understanding, missing key concepts" },
+            { "score": 2, "description": "Basic definition correct but incomplete explanation of mechanism" },
+            { "score": 3, "description": "Good explanation of closures and how they capture variables" },
+            { "score": 4, "description": "Excellent explanation including lexical environment, variable capture, and persistence" }
+          ]
+        },
+        "example_usage": {
+          "max_score": 3,
+          "weight_description": "Provides working code example demonstrating closure behavior",
+          "scoring_guide": [
+            { "score": 0, "description": "No example or completely incorrect example" },
+            { "score": 1, "description": "Simple example but doesn't clearly demonstrate closure" },
+            { "score": 2, "description": "Working example that shows closure behavior" },
+            { "score": 3, "description": "Excellent practical example with clear demonstration and real-world use case" }
+          ]
+        },
+        "edge_cases": {
+          "max_score": 2,
+          "weight_description": "Mentions common pitfalls, memory considerations, or multiple use cases",
+          "scoring_guide": [
+            { "score": 0, "description": "No mention of edge cases or additional considerations" },
+            { "score": 1, "description": "Mentions one additional use case or consideration" },
+            { "score": 2, "description": "Discusses multiple use cases, potential issues, or memory implications" }
+          ]
+        },
+        "clarity": {
+          "max_score": 1,
+          "weight_description": "Clear, well-structured explanation that's easy to follow",
+          "scoring_guide": [
+            { "score": 0, "description": "Unclear or disorganized response" },
+            { "score": 1, "description": "Clear, logical flow with good organization" }
+          ]
+        }
+      },
+      "tags": ["javascript", "closures", "functions", "scope"],
+      "estimated_time_minutes": 8
+    },
+    {
+      "title": "REST API Design Principles",
+      "question_text": "What are the key principles of RESTful API design? Explain with examples of good endpoint design.",
+      "category": "backend",
+      "topic": "API Design",
+      "difficulty": "medium",
+      "ideal_answer": "REST (Representational State Transfer) is an architectural style for designing networked applications. Key principles include:\n\n1. **Resource-Based URLs**: Use nouns, not verbs\n   - Good: GET /users/123\n   - Bad: GET /getUser?id=123\n\n2. **HTTP Methods for Actions**:\n   - GET: Retrieve resources\n   - POST: Create new resources\n   - PUT: Update entire resource\n   - PATCH: Partial update\n   - DELETE: Remove resource\n\n3. **Statelessness**: Each request contains all information needed; server doesn't store client state between requests.\n\n4. **Proper Status Codes**:\n   - 200 OK, 201 Created, 204 No Content\n   - 400 Bad Request, 401 Unauthorized, 404 Not Found\n   - 500 Internal Server Error\n\n5. **Resource Hierarchy**:\n   - /users/123/orders/456\n   - Shows relationship: order 456 belongs to user 123\n\n6. **Consistent Naming**:\n   - Use plural nouns: /users not /user\n   - Use kebab-case: /user-profiles\n   - Version API: /api/v1/users\n\n7. **Filtering, Pagination, Sorting**:\n   - GET /users?status=active&sort=created_at&page=2&limit=20\n\n8. **HATEOAS** (optional): Include links to related resources in responses.",
+      "rubric": {
+        "concept_accuracy": {
+          "max_score": 4,
+          "weight_description": "Covers core REST principles: resource-based URLs, HTTP methods, statelessness, status codes",
+          "scoring_guide": [
+            { "score": 0, "description": "Cannot explain REST principles" },
+            { "score": 1, "description": "Mentions REST but lacks understanding of core principles" },
+            { "score": 2, "description": "Explains 2-3 principles correctly" },
+            { "score": 3, "description": "Explains most principles with good understanding" },
+            { "score": 4, "description": "Comprehensive coverage of REST principles with clear explanations" }
+          ]
+        },
+        "example_usage": {
+          "max_score": 3,
+          "weight_description": "Provides concrete endpoint examples demonstrating good REST design",
+          "scoring_guide": [
+            { "score": 0, "description": "No examples or incorrect examples" },
+            { "score": 1, "description": "Basic examples without clear good/bad comparison" },
+            { "score": 2, "description": "Good examples showing proper endpoint design" },
+            { "score": 3, "description": "Excellent examples with good/bad comparisons and real-world scenarios" }
+          ]
+        },
+        "edge_cases": {
+          "max_score": 2,
+          "weight_description": "Discusses advanced topics like versioning, pagination, HATEOAS, or common mistakes",
+          "scoring_guide": [
+            { "score": 0, "description": "No advanced considerations mentioned" },
+            { "score": 1, "description": "Mentions one advanced topic" },
+            { "score": 2, "description": "Covers multiple advanced topics or common pitfalls" }
+          ]
+        },
+        "clarity": {
+          "max_score": 1,
+          "weight_description": "Well-organized response with clear structure",
+          "scoring_guide": [
+            { "score": 0, "description": "Disorganized or hard to follow" },
+            { "score": 1, "description": "Clear structure with logical flow" }
+          ]
+        }
+      },
+      "tags": ["rest", "api", "http", "backend"],
+      "estimated_time_minutes": 10
+    },
+    {
+      "title": "Database Indexing",
+      "question_text": "Explain what database indexes are, how they work, and when you should or shouldn't use them.",
+      "category": "databases",
+      "topic": "Database Optimization",
+      "difficulty": "medium",
+      "ideal_answer": "A database index is a data structure that improves the speed of data retrieval operations on a database table at the cost of additional storage space and slower writes.\n\n**How Indexes Work**:\n- Most commonly implemented as B-tree (balanced tree) structures\n- Index stores sorted values with pointers to actual table rows\n- Database can use binary search O(log n) instead of full table scan O(n)\n\n**Types of Indexes**:\n1. Primary Index (clustered): Determines physical order of data\n2. Secondary Index (non-clustered): Separate structure pointing to data\n3. Composite Index: Multiple columns combined\n4. Unique Index: Enforces uniqueness\n5. Full-text Index: For text search\n\n**When to Use Indexes**:\n- Columns frequently used in WHERE clauses\n- Columns used in JOIN conditions\n- Columns used in ORDER BY\n- Foreign key columns\n- High-cardinality columns (many unique values)\n\n**When NOT to Use**:\n- Small tables (full scan is faster)\n- Columns with low cardinality (e.g., boolean)\n- Columns rarely used in queries\n- Tables with heavy INSERT/UPDATE/DELETE operations\n- Wide columns (e.g., large text fields)\n\n**Trade-offs**:\n- Faster reads but slower writes\n- Additional storage space required\n- Index maintenance overhead",
+      "rubric": {
+        "concept_accuracy": {
+          "max_score": 4,
+          "weight_description": "Accurate explanation of indexes, their structure (B-tree), and how they speed up queries",
+          "scoring_guide": [
+            { "score": 0, "description": "No understanding of indexes" },
+            { "score": 1, "description": "Basic awareness that indexes speed up queries" },
+            { "score": 2, "description": "Understands index concept but missing internal mechanics" },
+            { "score": 3, "description": "Good explanation including data structures and query optimization" },
+            { "score": 4, "description": "Excellent explanation with B-tree mechanics, time complexity analysis" }
+          ]
+        },
+        "example_usage": {
+          "max_score": 3,
+          "weight_description": "Provides scenarios for when to use and not use indexes",
+          "scoring_guide": [
+            { "score": 0, "description": "No practical examples" },
+            { "score": 1, "description": "Generic examples without clear reasoning" },
+            { "score": 2, "description": "Good examples with clear use cases" },
+            { "score": 3, "description": "Excellent examples covering both when to use and when to avoid" }
+          ]
+        },
+        "edge_cases": {
+          "max_score": 2,
+          "weight_description": "Discusses trade-offs, index types, or common mistakes",
+          "scoring_guide": [
+            { "score": 0, "description": "No discussion of trade-offs or considerations" },
+            { "score": 1, "description": "Mentions basic trade-off (storage vs speed)" },
+            { "score": 2, "description": "Comprehensive discussion of trade-offs, types, and pitfalls" }
+          ]
+        },
+        "clarity": {
+          "max_score": 1,
+          "weight_description": "Clear explanation with logical structure",
+          "scoring_guide": [
+            { "score": 0, "description": "Unclear or rambling response" },
+            { "score": 1, "description": "Well-organized and easy to follow" }
+          ]
+        }
+      },
+      "tags": ["database", "indexing", "optimization", "sql"],
+      "estimated_time_minutes": 8
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+/* Reset default Vite demo layout so pages can use full-width SaaS layouts */
+#root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+

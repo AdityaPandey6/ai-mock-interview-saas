@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Interview Question Schema",
+  "description": "Schema for interview preparation questions with weighted rubric scoring",
+  "type": "object",
+  "required": ["version", "questions"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Question"
+      }
+    }
+  },
+  "definitions": {
+    "Question": {
+      "type": "object",
+      "required": [
+        "title",
+        "question_text",
+        "category",
+        "topic",
+        "difficulty",
+        "ideal_answer",
+        "rubric"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "question_text": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 5000
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "frontend",
+            "backend",
+            "system_design",
+            "data_structures",
+            "algorithms",
+            "databases",
+            "devops",
+            "behavioral"
+          ]
+        },
+        "topic": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"]
+        },
+        "ideal_answer": {
+          "type": "string",
+          "minLength": 50,
+          "maxLength": 10000
+        },
+        "rubric": {
+          "$ref": "#/definitions/EvaluationRubric"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "maxItems": 20
+        },
+        "estimated_time_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        }
+      }
+    },
+    "EvaluationRubric": {
+      "type": "object",
+      "required": ["concept_accuracy", "example_usage", "edge_cases", "clarity"],
+      "additionalProperties": false,
+      "properties": {
+        "concept_accuracy": {
+          "$ref": "#/definitions/RubricCriteria",
+          "description": "Must have max_score = 4"
+        },
+        "example_usage": {
+          "$ref": "#/definitions/RubricCriteria",
+          "description": "Must have max_score = 3"
+        },
+        "edge_cases": {
+          "$ref": "#/definitions/RubricCriteria",
+          "description": "Must have max_score = 2"
+        },
+        "clarity": {
+          "$ref": "#/definitions/RubricCriteria",
+          "description": "Must have max_score = 1"
+        }
+      }
+    },
+    "RubricCriteria": {
+      "type": "object",
+      "required": ["max_score", "weight_description", "scoring_guide"],
+      "properties": {
+        "max_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "weight_description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "scoring_guide": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ScoringLevel"
+          },
+          "minItems": 2
+        }
+      }
+    },
+    "ScoringLevel": {
+      "type": "object",
+      "required": ["score", "description"],
+      "properties": {
+        "score": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 300
+        }
+      }
+    }
+  }
+}
