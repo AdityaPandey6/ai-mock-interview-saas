@@ -19,6 +19,7 @@ interface MockSession {
     attention_score: number;
     stability_score: number;
   } | null;
+  confidence_score?: number;
 }
 
 interface MockAnswer {
@@ -83,7 +84,7 @@ export default function MockResult() {
       const [sessionResult, answersResult] = await Promise.all([
         supabase
           .from('mock_sessions')
-          .select('id, user_id, total_score, total_questions, status, started_at, ended_at, created_at, behavior_summary')
+          .select('id, user_id, total_score, total_questions, status, started_at, ended_at, created_at, behavior_summary, confidence_score')
           .eq('id', sessionId)
           .single(),
         supabase
@@ -215,6 +216,28 @@ export default function MockResult() {
     if (performance === 'Excellent') return 'bg-emerald-100 text-emerald-700';
     if (performance === 'Good') return 'bg-blue-100 text-blue-700';
     return 'bg-amber-100 text-amber-700';
+  };
+
+  const getConfidenceScoreColor = (score: number): { bg: string; text: string; label: string } => {
+    if (score > 80) {
+      return {
+        bg: 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200',
+        text: 'text-emerald-700',
+        label: 'Excellent Presence',
+      };
+    } else if (score >= 60) {
+      return {
+        bg: 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200',
+        text: 'text-blue-700',
+        label: 'Good Presence',
+      };
+    } else {
+      return {
+        bg: 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200',
+        text: 'text-amber-700',
+        label: 'Needs Improvement',
+      };
+    }
   };
 
   const getBehaviorFeedback = (behavior_summary: MockSession['behavior_summary']): { type: 'warning' | 'positive' | 'neutral'; message: string } | null => {
@@ -356,6 +379,38 @@ export default function MockResult() {
             </div>
           </div>
         </div>
+
+        {/* Confidence Score Card - Only show if confidence_score exists */}
+        {session.confidence_score !== undefined && session.confidence_score !== null && (
+          <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Interview Confidence</h2>
+            
+            <div className="flex items-center justify-center">
+              {(() => {
+                const scoreColor = getConfidenceScoreColor(session.confidence_score);
+                return (
+                  <div className={`rounded-xl p-8 border-2 ${scoreColor.bg} max-w-md w-full`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-2">Overall Confidence Score</p>
+                        <p className={`text-5xl font-bold ${scoreColor.text} mb-2`}>{session.confidence_score}%</p>
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${scoreColor.text} bg-white/60`}>
+                          {scoreColor.label}
+                        </span>
+                      </div>
+                      <div className={`w-24 h-24 rounded-full ${scoreColor.bg} flex items-center justify-center text-5xl border-4 border-white shadow-lg`}>
+                        {session.confidence_score > 80 ? '🌟' : session.confidence_score >= 60 ? '👍' : '📈'}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-4">
+                      Based on speaking engagement, camera presence, attention, and stability
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
 
         {/* Behavior Summary Card - Only show if behavior_summary exists */}
         {session.behavior_summary && (
