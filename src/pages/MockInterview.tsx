@@ -417,6 +417,11 @@ export default function MockInterview() {
   const questionStartTimeRef = useRef<number>(0);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(true);
+  
+  // Speaking time tracking refs
+  const speakingTimeRef = useRef<number>(0);
+  const speakingStartRef = useRef<number | null>(null);
+  const sessionStartTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!cameraReady) return;
@@ -721,6 +726,10 @@ export default function MockInterview() {
     try {
       if (!user) return;
 
+      // Record session start time
+      const startTime = new Date().toISOString();
+      sessionStartTimeRef.current = Date.now();
+
       const { data: sessionData, error: sessionError } = await supabase
         .from('mock_sessions')
         .insert({
@@ -728,6 +737,7 @@ export default function MockInterview() {
           status: 'active',
           total_score: 0,
           total_questions: 5,
+          started_at: startTime,
         })
         .select()
         .single();
@@ -767,10 +777,20 @@ export default function MockInterview() {
 
       recognition.onstart = () => {
         setListening(true);
+        // Save current timestamp when speaking starts
+        speakingStartRef.current = Date.now();
+        console.log("Speaking started");
       };
 
       recognition.onend = () => {
         setListening(false);
+        // If speakingStartRef exists, accumulate speaking time
+        if (speakingStartRef.current !== null) {
+          const speakingDuration = Date.now() - speakingStartRef.current;
+          speakingTimeRef.current += speakingDuration;
+          speakingStartRef.current = null;
+          console.log("Speaking stopped, accumulated time:", speakingTimeRef.current);
+        }
       };
 
       recognition.onerror = (event: any) => {
@@ -973,10 +993,66 @@ export default function MockInterview() {
         console.warn('⚠️ No frames were processed during interview');
       }
 
+      // Calculate speaking score
+      const endTime = Date.now();
+      const startTime = sessionStartTimeRef.current || endTime;
+      const durationMs = endTime - startTime;
+      
+      // Accumulate any remaining speaking time if still recording
+      if (speakingStartRef.current !== null) {
+        speakingTimeRef.current += (endTime - speakingStartRef.current);
+        speakingStartRef.current = null;
+      }
+      
+      const speakingTime = speakingTimeRef.current;
+      let speaking_score = 50; // Default if no duration or speaking time
+      
+      if (durationMs > 0 && speakingTime > 0) {
+        const speakingRatio = speakingTime / durationMs;
+        speaking_score = Math.min(speakingRatio * 120, 100);
+      }
+      
+      // Clamp speaking_score between 0 and 100
+      speaking_score = Math.max(0, Math.min(100, speaking_score));
+      
+      console.log('Speaking metrics:', {
+        speakingTime,
+        durationMs,
+        speaking_score: speaking_score.toFixed(2),
+      });
+
+      // Calculate confidence score
+      let confidence_score = 50; // Default if no behavior summary
+      
+      if (behaviorSummary) {
+        const face_presence = behaviorSummary.face_presence;
+        const attention_score = behaviorSummary.attention_score;
+        const stability_score = behaviorSummary.stability_score;
+        
+        confidence_score = 
+          (face_presence * 0.3) +
+          (attention_score * 0.3) +
+          (stability_score * 0.2) +
+          (speaking_score * 0.2);
+        
+        // Clamp confidence_score between 0 and 100
+        confidence_score = Math.max(0, Math.min(100, confidence_score));
+        
+        // Round to integer
+        confidence_score = Math.round(confidence_score);
+        
+        console.log('Confidence score calculated:', confidence_score);
+      } else {
+        // If no behavior summary, use speaking score only
+        confidence_score = Math.round(speaking_score * 0.5 + 50 * 0.5);
+        console.log('Confidence score calculated (no behavior data):', confidence_score);
+      }
+
       // Prepare update object
       const updateData: Record<string, unknown> = {
         status: 'completed',
         ended_at: new Date().toISOString(),
+        confidence_score: confidence_score,
       };
 
       // Only add behavior_summary if it was successfully generated
