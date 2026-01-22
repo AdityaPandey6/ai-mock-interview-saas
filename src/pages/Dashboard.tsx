@@ -4,6 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 
+interface QuestionDetails {
+  question_text: string;
+  topic: string;
+  difficulty: string;
+}
+
 interface Attempt {
   id: string;
   user_id: string;
@@ -12,6 +18,7 @@ interface Attempt {
   time_taken: number;
   answer_text: string;
   created_at: string;
+  questions: QuestionDetails | null;
 }
 
 const Dashboard: FC = () => {
@@ -30,10 +37,26 @@ const Dashboard: FC = () => {
   const fetchUserAttempts = async () => {
     try {
       const { data, error } = await supabase
-        .from('attempts')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+      .from("mock_answers")
+      .select(`
+        id,
+        session_id,
+        question_id,
+        user_answer,
+        final_score,
+        created_at,
+        questions (
+          question_text,
+          topic,
+          difficulty
+        ),
+        mock_sessions (
+          user_id
+        )
+      `)
+      .eq("mock_sessions.user_id", user?.id)
+      .order("created_at", { ascending: false })
+      .limit(50);    
 
       if (error) throw error;
       setAttempts(data || []);
@@ -316,39 +339,65 @@ const Dashboard: FC = () => {
                     <button className="text-sm text-blue-600 font-medium hover:text-blue-700">See all</button>
                   </div>
                   <div className="space-y-3">
-                    {attempts.slice(0, 5).map((attempt) => (
-                      <div 
-                        key={attempt.id} 
-                        className={`flex items-center justify-between p-4 rounded-xl border ${
-                          attempt.is_correct 
-                            ? 'bg-emerald-50/50 border-emerald-100' 
-                            : 'bg-red-50/50 border-red-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+                    {attempts.slice(0, 5).map((attempt) => {
+                      const questionText = attempt.questions?.question_text || 'Question unavailable';
+                      const topic = attempt.questions?.topic;
+                      const difficulty = attempt.questions?.difficulty;
+                      
+                      return (
+                        <div 
+                          key={attempt.id} 
+                          className={`flex items-center justify-between p-4 rounded-xl border transition-all hover:shadow-md ${
                             attempt.is_correct 
-                              ? 'bg-emerald-100 text-emerald-600' 
-                              : 'bg-red-100 text-red-600'
-                          }`}>
-                            {attempt.is_correct ? '✓' : '✗'}
-                          </span>
-                          <div>
-                            <p className="font-medium text-gray-900">Question ID: {attempt.question_id.substring(0, 8)}...</p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(attempt.created_at).toLocaleDateString()} at {new Date(attempt.created_at).toLocaleTimeString()}
-                            </p>
+                              ? 'bg-emerald-50/50 border-emerald-100 hover:bg-emerald-50' 
+                              : 'bg-red-50/50 border-red-100 hover:bg-red-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
+                              attempt.is_correct 
+                                ? 'bg-emerald-100 text-emerald-600' 
+                                : 'bg-red-100 text-red-600'
+                            }`}>
+                              {attempt.is_correct ? '✓' : '✗'}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 line-clamp-2 mb-1">
+                                {questionText}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-xs text-gray-500">
+                                  {new Date(attempt.created_at).toLocaleDateString()} at {new Date(attempt.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                {topic && (
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                                    {topic}
+                                  </span>
+                                )}
+                                {difficulty && (
+                                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                    difficulty === 'easy' 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : difficulty === 'medium'
+                                      ? 'bg-amber-100 text-amber-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {difficulty}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-3 ${
+                            attempt.is_correct 
+                              ? 'bg-emerald-100 text-emerald-700' 
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {attempt.is_correct ? 'Correct' : 'Incorrect'}
+                          </span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          attempt.is_correct 
-                            ? 'bg-emerald-100 text-emerald-700' 
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {attempt.is_correct ? 'Correct' : 'Incorrect'}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

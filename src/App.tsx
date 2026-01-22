@@ -7,6 +7,7 @@ import Register from './pages/Register.tsx'
 import Dashboard from './pages/Dashboard.tsx'
 import Practice from './pages/Practice.tsx'
 import MockInterview from './pages/MockInterview.tsx'
+import MockResult from './pages/MockResult.tsx'
 import './App.css'
 import './index.css'
 
@@ -39,6 +40,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MockInterview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mock-result/:sessionId"
+            element={
+              <ProtectedRoute>
+                <MockResult />
               </ProtectedRoute>
             }
           />

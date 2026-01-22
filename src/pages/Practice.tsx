@@ -1,9 +1,8 @@
 import type { FC } from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import './Practice.css';
 
 interface Question {
   id: string;
@@ -13,7 +12,6 @@ interface Question {
   answer: string;
 }
 
-// Type for Web Speech API
 interface SpeechRecognition {
   continuous: boolean;
   interimResults: boolean;
@@ -27,346 +25,382 @@ interface SpeechRecognition {
   onresult: ((event: any) => void) | null;
 }
 
+/* ================= TIMER BAR ================= */
+
+const TimerBar: FC<{ time: number }> = ({ time }) => {
+  const percent = (time / 60) * 100;
+
+  const color = useMemo(() => {
+    if (time > 20) return 'from-cyan-500 to-blue-600';
+    if (time > 10) return 'from-amber-400 to-orange-500';
+    return 'from-red-500 to-rose-600';
+  }, [time]);
+
+  return (
+    <div className="w-full">
+      <div className="flex justify-between text-xs mb-1 text-gray-600">
+        <span>Time Remaining</span>
+        <span className="font-semibold">{time}s</span>
+      </div>
+
+      <div className="h-3.5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+        <div
+          className={`h-full bg-gradient-to-r ${color} transition-all duration-500 ease-linear`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+/* ================= QUESTION PANEL ================= */
+
+const QuestionPanel: FC<{
+  question: Question;
+  index: number;
+  total: number;
+  timeRemaining: number;
+}> = ({ question, index, total, timeRemaining }) => {
+  return (
+    <div
+      className="
+      bg-white rounded-3xl p-10
+      shadow-xl hover:shadow-2xl
+      border border-gray-100
+      space-y-6
+      transition-all duration-300
+      hover:-translate-y-1
+    "
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div
+            className="
+            w-11 h-11 rounded-xl
+            bg-gradient-to-br from-cyan-500 to-blue-600
+            flex items-center justify-center
+            text-white font-bold
+            shadow-lg shadow-cyan-500/30
+            hover:scale-105 transition-all
+          "
+          >
+            {index + 1}
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-500">Question</p>
+            <p className="font-semibold text-gray-900">
+              {index + 1} / {total}
+            </p>
+          </div>
+        </div>
+
+        <span className="px-3 py-1 text-xs font-semibold bg-purple-100 text-purple-700 rounded-full">
+          Practice Mode
+        </span>
+      </div>
+
+      {/* Timer */}
+      <TimerBar time={timeRemaining} />
+
+      {/* Tags */}
+      <div className="flex gap-2">
+        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full font-semibold">
+          {question.topic}
+        </span>
+
+        <span
+          className={`px-3 py-1 text-xs rounded-full font-semibold ${
+            question.difficulty === 'easy'
+              ? 'bg-green-100 text-green-700'
+              : question.difficulty === 'medium'
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {question.difficulty}
+        </span>
+      </div>
+
+      {/* Question */}
+      <h2 className="text-xl lg:text-2xl font-bold text-gray-900 leading-relaxed">
+        {question.question_text}
+      </h2>
+    </div>
+  );
+};
+
+/* ================= ANSWER PANEL ================= */
+
+const AnswerPanel: FC<any> = ({
+  userAnswer,
+  onChange,
+  onSubmit,
+  onSkip,
+  listening,
+  speechSupported,
+  onStartListening,
+  onStopListening,
+  submitting,
+  feedback,
+}) => {
+  return (
+    <div
+      className="
+      bg-white rounded-3xl p-10
+      shadow-xl hover:shadow-2xl
+      border border-gray-100
+      flex flex-col h-full
+      transition-all duration-300
+      hover:-translate-y-1
+    "
+    >
+      <label className="font-semibold mb-2">Your Answer</label>
+
+      <textarea
+        value={userAnswer}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Type your answer or speak..."
+        className="
+        flex-1 p-5 border-2 rounded-2xl resize-none
+        focus:outline-none
+        focus:ring-4 focus:ring-cyan-500/20
+        focus:border-cyan-500
+        transition-all duration-200
+        shadow-inner
+      "
+      />
+
+      {/* Voice Controls */}
+      {speechSupported && (
+        <div className="mt-4">
+          {!listening ? (
+            <button
+              onClick={onStartListening}
+              disabled={submitting}
+              className="
+              px-4 py-2
+              bg-emerald-500 hover:bg-emerald-600
+              text-white rounded-xl font-semibold
+              transition-all duration-200
+              hover:scale-[1.02]
+              active:scale-[0.97]
+              shadow-md hover:shadow-lg
+            "
+            >
+              🎤 Start Speaking
+            </button>
+          ) : (
+            <button
+              onClick={onStopListening}
+              className="
+              px-4 py-2
+              bg-red-500 text-white
+              rounded-xl font-semibold
+              animate-pulse
+              shadow-md
+            "
+            >
+              ⏹ Stop Recording
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Feedback */}
+      {feedback && (
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm">
+          {feedback}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="mt-6 flex gap-3">
+        <button
+          onClick={onSubmit}
+          disabled={submitting || !userAnswer.trim()}
+          className="
+          flex-1 py-4
+          bg-gradient-to-r from-cyan-500 to-blue-600
+          text-white rounded-xl font-bold
+          hover:opacity-95
+          hover:scale-[1.02]
+          active:scale-[0.98]
+          disabled:opacity-50
+          transition-all duration-200
+          shadow-lg hover:shadow-xl
+        "
+        >
+          Submit Answer
+        </button>
+
+        <button
+          onClick={onSkip}
+          disabled={submitting}
+          className="
+          px-6 py-4
+          border rounded-xl font-semibold
+          hover:bg-gray-50
+          hover:scale-[1.02]
+          active:scale-[0.97]
+          transition-all duration-200
+          shadow-sm hover:shadow-md
+        "
+        >
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ================= MAIN PRACTICE ================= */
+
 const Practice: FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState('');
-  const [stats, setStats] = useState({ correct: 0, total: 0 });
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const [speechSupported, setSpeechSupported] = useState(true);
 
-  // Fetch all questions on component mount
+  const [timeRemaining, setTimeRemaining] = useState(60);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  /* Fetch Questions */
   useEffect(() => {
-    fetchQuestions();
-  }, []);
-
-  // Fetch stats when user changes
-  useEffect(() => {
-    if (user) {
-      fetchUserStats();
-    }
-  }, [user]);
-
-  const fetchQuestions = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*');
-
-      if (error) throw error;
+    const fetch = async () => {
+      const { data } = await supabase.from('questions').select('*');
       setQuestions(data || []);
-    } catch (err) {
-      console.error('Error fetching questions:', err);
-      setFeedback('Failed to load questions');
-    } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchUserStats = async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('attempts')
-        .select('is_correct')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      const correct = data?.filter(d => d.is_correct).length || 0;
-      setStats({ correct, total: data?.length || 0 });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
-  };
-
-  // Initialize Web Speech API
-  useEffect(() => {
-    try {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
-      if (!SpeechRecognition) {
-        console.warn('Speech Recognition API not supported in this browser');
-        setSpeechSupported(false);
-        return;
-      }
-
-      console.log('Initializing Speech Recognition');
-      recognitionRef.current = new SpeechRecognition();
-      const recognition = recognitionRef.current;
-
-      if (!recognition) {
-        console.error('Failed to create recognition instance');
-        setSpeechSupported(false);
-        return;
-      }
-
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        console.log('Speech recognition started');
-        setListening(true);
-      };
-
-      recognition.onend = () => {
-        console.log('Speech recognition ended');
-        setListening(false);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        const errorMsg = `🎤 Error: ${event.error}`;
-        setFeedback(errorMsg);
-        setListening(false);
-        
-        // Provide helpful error messages
-        if (event.error === 'no-speech') {
-          setFeedback('🎤 No speech detected. Please check your microphone and try again.');
-        } else if (event.error === 'network') {
-          setFeedback('🎤 Network error. Please check your connection.');
-        } else if (event.error === 'permission-denied') {
-          setFeedback('🎤 Microphone permission denied. Please allow access in browser settings.');
-        }
-      };
-
-      recognition.onresult = (event: any) => {
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          }
-        }
-
-        if (finalTranscript) {
-          setUserAnswer((prev) => (prev + finalTranscript).trim());
-        }
-      };
-
-      setSpeechSupported(true);
-
-      return () => {
-        if (recognitionRef.current) {
-          recognitionRef.current.abort();
-        }
-      };
-    } catch (error) {
-      console.error('Error initializing speech recognition:', error);
-      setSpeechSupported(false);
-    }
+    };
+    fetch();
   }, []);
 
-  const startListening = () => {
-    if (recognitionRef.current && !listening) {
-      setUserAnswer('');
-      recognitionRef.current.start();
-    }
-  };
+  /* Timer */
+  useEffect(() => {
+    if (!questions.length) return;
 
-  const stopListening = () => {
-    if (recognitionRef.current && listening) {
-      recognitionRef.current.stop();
-      setListening(false);
-    }
-  };
+    setTimeRemaining(60);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!user || !questions[currentIndex]) return;
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((t) => (t <= 1 ? 0 : t - 1));
+    }, 1000);
 
-    try {
-      setSubmitting(true);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [currentIndex, questions.length]);
+
+  /* Speech API */
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return setSpeechSupported(false);
+
+    recognitionRef.current = new SR();
+    const rec = recognitionRef.current;
+
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+
+    rec.onstart = () => setListening(true);
+    rec.onend = () => setListening(false);
+
+    rec.onresult = (e: any) => {
+      let text = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) text += e.results[i][0].transcript;
+      }
+      if (text) setUserAnswer((p) => (p + ' ' + text).trim());
+    };
+
+    return () => rec.abort();
+  }, []);
+
+  /* Submit */
+  const handleSubmit = async () => {
+    if (!user) return;
+
+    const q = questions[currentIndex];
+
+    setSubmitting(true);
+
+    const correct =
+      q.answer &&
+      userAnswer.toLowerCase().includes(q.answer.toLowerCase().split(' ')[0]);
+
+    await supabase.from('attempts').insert({
+      user_id: user.id,
+      question_id: q.id,
+      is_correct: correct,
+      answer_text: userAnswer,
+      time_taken: 0,
+    });
+
+    setFeedback(correct ? '✅ Correct Answer' : `❌ Correct: ${q.answer}`);
+
+    setTimeout(() => {
       setFeedback('');
+      setUserAnswer('');
+      setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
+    }, 1200);
 
-      const currentQuestion = questions[currentIndex];
-      const userAnswerLower = userAnswer.toLowerCase().trim();
-      const correctAnswerLower = currentQuestion.answer.toLowerCase().trim();
-      
-      // Simple check: if user answer contains key words from correct answer
-      const isCorrect = correctAnswerLower
-        .split(' ')
-        .some(word => word.length > 3 && userAnswerLower.includes(word));
+    setSubmitting(false);
+  };
 
-      // Insert attempt
-      const { error: insertError } = await supabase
-        .from('attempts')
-        .insert({
-          user_id: user.id,
-          question_id: currentQuestion.id,
-          is_correct: isCorrect,
-          time_taken: 0,
-          answer_text: userAnswer,
-        });
-
-      if (insertError) throw insertError;
-
-      // Show feedback
-      setFeedback(
-        isCorrect
-          ? '✅ Correct! Great job!'
-          : `❌ Not quite right. The answer was: ${currentQuestion.answer}`
-      );
-
-      // Update stats
-      fetchUserStats();
-
-      // Move to next question after 2 seconds
-      setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex(currentIndex + 1);
-          setUserAnswer('');
-          setFeedback('');
-        } else {
-          setFeedback('🎉 You completed all questions! Great effort!');
-        }
-      }, 2000);
-    } catch (err) {
-      console.error('Error submitting attempt:', err);
-      setFeedback('Error submitting your answer');
-    } finally {
-      setSubmitting(false);
-    }
+  const handleSkip = () => {
+    setUserAnswer('');
+    setFeedback('');
+    setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
   };
 
   if (loading) {
-    return (
-      <div className="practice-container">
-        <div className="loading">Loading questions...</div>
-      </div>
-    );
-  }
-
-  if (!questions.length) {
-    return (
-      <div className="practice-container">
-        <div className="error">No questions available</div>
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   const currentQuestion = questions[currentIndex];
-  const progress = ((currentIndex + 1) / questions.length) * 100;
 
   return (
-    <div className="practice-container">
-      <div className="practice-header">
-        <h1>Interview Practice</h1>
-        <div className="practice-stats">
-          <span>Correct: {stats.correct}/{stats.total}</span>
-          <button onClick={() => navigate('/dashboard')} className="back-btn">
-            Back to Dashboard
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+
+      {/* Header */}
+      <div className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
+        <h1 className="font-bold text-lg">📚 Practice Mode</h1>
+        <button onClick={() => navigate('/dashboard')}>✖</button>
       </div>
 
-      <div className="progress-bar">
-        <div className="progress-fill" style={{ width: `${progress}%` }}></div>
-      </div>
+      {/* Layout */}
+      <div className="max-w-[1800px] mx-auto p-8 grid lg:grid-cols-2 gap-8">
 
-      <div className="progress-text">
-        Question {currentIndex + 1} of {questions.length}
-      </div>
+        <QuestionPanel
+          question={currentQuestion}
+          index={currentIndex}
+          total={questions.length}
+          timeRemaining={timeRemaining}
+        />
 
-      <div className="practice-content">
-        <div className="question-card">
-          <div className="question-meta">
-            <span className={`difficulty ${currentQuestion.difficulty.toLowerCase()}`}>
-              {currentQuestion.difficulty}
-            </span>
-            <span className="topic">{currentQuestion.topic}</span>
-          </div>
+        <AnswerPanel
+          userAnswer={userAnswer}
+          onChange={setUserAnswer}
+          onSubmit={handleSubmit}
+          onSkip={handleSkip}
+          listening={listening}
+          speechSupported={speechSupported}
+          onStartListening={() => recognitionRef.current?.start()}
+          onStopListening={() => recognitionRef.current?.stop()}
+          submitting={submitting}
+          feedback={feedback}
+        />
 
-          <div className="question-text">
-            <h2>{currentQuestion.question_text}</h2>
-          </div>
-
-          <form onSubmit={handleSubmit} className="answer-form">
-            <div className="form-group">
-              <label htmlFor="answer">Your Answer:</label>
-              <div className="textarea-wrapper">
-                <textarea
-                  id="answer"
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  placeholder="Type your answer here or use speech recognition..."
-                  rows={6}
-                  disabled={submitting || currentIndex === questions.length - 1 && feedback.includes('🎉')}
-                />
-                {listening && <div className="listening-indicator">🎤 Listening...</div>}
-              </div>
-            </div>
-
-            {speechSupported && (
-              <div className="speech-buttons">
-                <button
-                  type="button"
-                  onClick={startListening}
-                  disabled={listening || submitting}
-                  className="speech-btn start-speech-btn"
-                >
-                  🎤 Start Speaking
-                </button>
-                <button
-                  type="button"
-                  onClick={stopListening}
-                  disabled={!listening}
-                  className="speech-btn stop-speech-btn"
-                >
-                  ⏹️ Stop Speaking
-                </button>
-              </div>
-            )}
-
-            {!speechSupported && (
-              <p className="no-speech-support">
-                💡 Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.
-              </p>
-            )}
-
-            {feedback && (
-              <div className={`feedback ${feedback.includes('✅') ? 'correct' : feedback.includes('❌') ? 'incorrect' : 'info'}`}>
-                {feedback}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!userAnswer.trim() || submitting}
-              className="submit-btn"
-            >
-              {submitting ? 'Submitting...' : 'Submit Answer'}
-            </button>
-          </form>
-
-          {currentIndex === questions.length - 1 && feedback.includes('🎉') && (
-            <button
-              onClick={() => {
-                setCurrentIndex(0);
-                setUserAnswer('');
-                setFeedback('');
-              }}
-              className="restart-btn"
-            >
-              Start Over
-            </button>
-          )}
-        </div>
-
-        <div className="hint-box">
-          <h3>💡 Hint:</h3>
-          <p>Take your time and provide a clear, concise answer.</p>
-          <p>The system will check your answer for key concepts.</p>
-        </div>
       </div>
     </div>
   );
