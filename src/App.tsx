@@ -1,15 +1,15 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext.tsx'
-import ProtectedRoute from './components/ProtectedRoute.tsx'
-import Landing from './pages/Landing.tsx'
-import Login from './pages/Login.tsx'
-import Register from './pages/Register.tsx'
-import Dashboard from './pages/Dashboard.tsx'
-import Practice from './pages/Practice.tsx'
-import MockInterview from './pages/MockInterview.tsx'
-import MockResult from './pages/MockResult.tsx'
-import './App.css'
-import './index.css'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import Landing from "./pages/Landing.tsx";
+import Login from "./pages/Login.tsx";
+import Register from "./pages/Register.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
+import PracticeUnavailable from "./pages/PracticeUnavailable.tsx";
+import MockInterview from "./pages/MockInterview.tsx";
+import MockResult from "./pages/MockResult.tsx";
+import "./App.css";
+import "./index.css";
 
 function App() {
   return (
@@ -31,7 +31,7 @@ function App() {
             path="/practice"
             element={
               <ProtectedRoute>
-                <Practice />
+                <PracticeUnavailable />
               </ProtectedRoute>
             }
           />
@@ -54,7 +54,7 @@ function App() {
         </Routes>
       </AuthProvider>
     </Router>
-  )
+  );
 }
 
-export default App
+export default App;
