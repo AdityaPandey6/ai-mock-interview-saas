@@ -1,8 +1,8 @@
-import type { FC } from 'react';
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../services/supabase';
+import type { FC } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../services/supabase";
 
 interface Question {
   id: string;
@@ -31,9 +31,9 @@ const TimerBar: FC<{ time: number }> = ({ time }) => {
   const percent = (time / 60) * 100;
 
   const color = useMemo(() => {
-    if (time > 20) return 'from-cyan-500 to-blue-600';
-    if (time > 10) return 'from-amber-400 to-orange-500';
-    return 'from-red-500 to-rose-600';
+    if (time > 20) return "from-cyan-500 to-blue-600";
+    if (time > 10) return "from-amber-400 to-orange-500";
+    return "from-red-500 to-rose-600";
   }, [time]);
 
   return (
@@ -112,11 +112,11 @@ const QuestionPanel: FC<{
 
         <span
           className={`px-3 py-1 text-xs rounded-full font-semibold ${
-            question.difficulty === 'easy'
-              ? 'bg-green-100 text-green-700'
-              : question.difficulty === 'medium'
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-red-100 text-red-700'
+            question.difficulty === "easy"
+              ? "bg-green-100 text-green-700"
+              : question.difficulty === "medium"
+                ? "bg-amber-100 text-amber-700"
+                : "bg-red-100 text-red-700"
           }`}
         >
           {question.difficulty}
@@ -263,8 +263,8 @@ const Practice: FC = () => {
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [feedback, setFeedback] = useState('');
+  const [userAnswer, setUserAnswer] = useState("");
+  const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -278,7 +278,7 @@ const Practice: FC = () => {
   /* Fetch Questions */
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from('questions').select('*');
+      const { data } = await supabase.from("questions").select("*");
       setQuestions(data || []);
       setLoading(false);
     };
@@ -302,7 +302,9 @@ const Practice: FC = () => {
 
   /* Speech API */
   useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SR =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
     if (!SR) return setSpeechSupported(false);
 
     recognitionRef.current = new SR();
@@ -310,17 +312,17 @@ const Practice: FC = () => {
 
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = 'en-US';
+    rec.lang = "en-US";
 
     rec.onstart = () => setListening(true);
     rec.onend = () => setListening(false);
 
     rec.onresult = (e: any) => {
-      let text = '';
+      let text = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) text += e.results[i][0].transcript;
       }
-      if (text) setUserAnswer((p) => (p + ' ' + text).trim());
+      if (text) setUserAnswer((p) => (p + " " + text).trim());
     };
 
     return () => rec.abort();
@@ -336,9 +338,9 @@ const Practice: FC = () => {
 
     const correct =
       q.answer &&
-      userAnswer.toLowerCase().includes(q.answer.toLowerCase().split(' ')[0]);
+      userAnswer.toLowerCase().includes(q.answer.toLowerCase().split(" ")[0]);
 
-    await supabase.from('attempts').insert({
+    await supabase.from("attempts").insert({
       user_id: user.id,
       question_id: q.id,
       is_correct: correct,
@@ -346,11 +348,11 @@ const Practice: FC = () => {
       time_taken: 0,
     });
 
-    setFeedback(correct ? '✅ Correct Answer' : `❌ Correct: ${q.answer}`);
+    setFeedback(correct ? "✅ Correct Answer" : `❌ Correct: ${q.answer}`);
 
     setTimeout(() => {
-      setFeedback('');
-      setUserAnswer('');
+      setFeedback("");
+      setUserAnswer("");
       setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
     }, 1200);
 
@@ -358,29 +360,31 @@ const Practice: FC = () => {
   };
 
   const handleSkip = () => {
-    setUserAnswer('');
-    setFeedback('');
+    setUserAnswer("");
+    setFeedback("");
     setCurrentIndex((i) => Math.min(i + 1, questions.length - 1));
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   const currentQuestion = questions[currentIndex];
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       {/* Header */}
       <div className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
         <h1 className="font-bold text-lg">📚 Practice Mode</h1>
-        <button onClick={() => navigate('/dashboard')}>✖</button>
+        <button onClick={() => navigate("/dashboard")}>✖</button>
       </div>
 
       {/* Layout */}
       <div className="max-w-[1800px] mx-auto p-8 grid lg:grid-cols-2 gap-8">
-
         <QuestionPanel
           question={currentQuestion}
           index={currentIndex}
@@ -400,7 +404,6 @@ const Practice: FC = () => {
           submitting={submitting}
           feedback={feedback}
         />
-
       </div>
     </div>
   );
