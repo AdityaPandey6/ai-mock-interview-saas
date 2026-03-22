@@ -273,7 +273,7 @@ const Practice: FC = () => {
   const [speechSupported, setSpeechSupported] = useState(true);
 
   const [timeRemaining, setTimeRemaining] = useState(60);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Fetch Questions */
   useEffect(() => {
@@ -309,6 +309,7 @@ const Practice: FC = () => {
 
     recognitionRef.current = new SR();
     const rec = recognitionRef.current;
+    if (!rec) return;
 
     rec.continuous = true;
     rec.interimResults = true;
@@ -399,8 +400,16 @@ const Practice: FC = () => {
           onSkip={handleSkip}
           listening={listening}
           speechSupported={speechSupported}
-          onStartListening={() => recognitionRef.current?.start()}
-          onStopListening={() => recognitionRef.current?.stop()}
+          onStartListening={() => {
+            const rec = recognitionRef.current;
+            if (!rec) return;
+            rec.start();
+          }}
+          onStopListening={() => {
+            const rec = recognitionRef.current;
+            if (!rec) return;
+            rec.stop();
+          }}
           submitting={submitting}
           feedback={feedback}
         />
