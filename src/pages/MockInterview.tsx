@@ -533,51 +533,41 @@ export default function MockInterview() {
     }
   };
 
-  const stopListeningAndWait = () => {
-    return new Promise<void>((resolve) => {
-      if (!mediaRecorderRef.current) {
-        resolve();
-        return;
-      }
+  const stopListening = async () => {
+    if (!mediaRecorderRef.current) return;
 
-      mediaRecorderRef.current.stop();
-      setListening(false);
+    mediaRecorderRef.current.stop();
+    setListening(false);
 
-      mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
+    mediaRecorderRef.current.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, {
+        type: "audio/webm",
+      });
 
-        const formData = new FormData();
-        formData.append("file", audioBlob);
+      const formData = new FormData();
+      formData.append("file", audioBlob);
 
-        try {
-          const { data, error: transcribeError } =
-            await supabase.functions.invoke("transcribe-audio", {
-              body: formData,
-            });
+      try {
+        const { data, error: transcribeError } =
+          await supabase.functions.invoke("transcribe-audio", {
+            body: formData,
+          });
 
-          if (!transcribeError && data?.text) {
-            setUserAnswer((prev) => (prev + " " + data.text).trim());
-          }
-        } catch (err) {
-          console.error("Transcription error:", err);
-        }
+        if (transcribeError) throw transcribeError;
 
+        console.log("Transcript:", data.text);
+
+        setUserAnswer((prev) => (prev + " " + data.text).trim());
+      } catch (err) {
+        console.error("Transcription error:", err);
+      } finally {
         if (audioStreamRef.current) {
           audioStreamRef.current.getTracks().forEach((track) => track.stop());
           audioStreamRef.current = null;
         }
         mediaRecorderRef.current = null;
-
-        // Wait a bit so React state updates settle before submit uses answer state.
-        setTimeout(() => resolve(), 200);
-      };
-    });
-  };
-
-  const stopListening = async () => {
-    await stopListeningAndWait();
+      }
+    };
   };
 
   const captureFrame = () => {
@@ -943,11 +933,6 @@ export default function MockInterview() {
     if (submitting || !sessionId) return;
 
     setSubmitting(true);
-
-    // Stop recording and wait for transcription before submitting answer.
-    if (listening) {
-      await stopListeningAndWait();
-    }
 
     // Clear timer to prevent race condition
     if (timerRef.current) {
