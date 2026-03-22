@@ -61,7 +61,19 @@ const Dashboard: FC = () => {
         .limit(50);
 
       if (error) throw error;
-      setAttempts(data || []);
+
+      const formattedAttempts: Attempt[] = (data || []).map((item: any) => ({
+        id: item.id,
+        question_id: item.question_id,
+        user_id: item.mock_sessions?.[0]?.user_id ?? "",
+        answer_text: item.user_answer,
+        is_correct: item.final_score >= 0.7,
+        time_taken: 0,
+        created_at: item.created_at,
+        questions: item.questions?.[0] ?? null,
+      }));
+
+      setAttempts(formattedAttempts);
     } catch (err) {
       console.error("Error fetching attempts:", err);
       setAttempts([]);
