@@ -1,13 +1,36 @@
+type Rubric = {
+  concept_accuracy: string;
+  example_usage: string;
+  edge_cases: string;
+  clarity: string;
+};
+
 export function buildEvaluationPrompt(
   question: string,
   idealAnswer: string,
-  rubric: any,
-  userAnswer: string
+  rubric: Rubric,
+  userAnswer: string,
 ) {
   return `
 You are a senior technical interviewer.
 
-Evaluate the candidate answer semantically.
+Evaluate the candidate answer strictly based on the rubric.
+
+Rubric:
+${JSON.stringify(rubric, null, 2)}
+
+Scoring Guidelines:
+0.0 - Completely incorrect or irrelevant
+0.3 - Partial understanding with major gaps
+0.5 - Average answer, missing depth
+0.7 - Good answer with minor gaps
+1.0 - Excellent and complete
+
+Rules:
+- Only evaluate based on the candidate answer
+- Do NOT assume missing information
+- Do NOT infer unstated knowledge
+- Be strict and realistic
 
 Question:
 ${question}
@@ -18,7 +41,9 @@ ${idealAnswer}
 Candidate Answer:
 ${userAnswer}
 
-Return ONLY valid JSON in this exact format:
+Return ONLY raw JSON.
+Do NOT include markdown or explanation.
+The response must start with { and end with }.
 
 {
   "concept_accuracy": number,
@@ -28,17 +53,5 @@ Return ONLY valid JSON in this exact format:
   "overall_feedback": string,
   "improvement_tips": string
 }
-
-Rules:
-- concept_accuracy, example_usage, edge_cases, clarity must be numbers between 0 and 1
-- These values represent raw evaluation quality, NOT final score
-- Do NOT apply any weighting
-- Do NOT normalize
-- Do NOT calculate final score
-- Be strict and realistic
-- Poor answers should receive low values (below 0.4)
-- Excellent answers can receive high values (above 0.8)
-- Return only JSON
-- Do NOT add markdown
 `;
 }
